@@ -271,24 +271,8 @@ class ConverterApp:
 
 
 def main():
-    try:
-        from tkinterdnd2 import TkinterDnD
-        root = TkinterDnD.Tk()
-        app = ConverterApp.__new__(ConverterApp)
-        app.root = root
-        app.root.title("Mac PPTX Converter")
-        app.root.configure(bg=BG_COLOR)
-        app.root.minsize(640, 520)
-        app.root.geometry("720x600")
-        if sys.platform == "darwin":
-            app.root.createcommand("tk::mac::OpenDocument", app._on_open_document)
-        app._setup_fonts()
-        app._build_ui()
-        app._setup_dnd()
-        app.run()
-    except ImportError:
-        app = ConverterApp()
-        app.run()
+    app = ConverterApp()
+    app.run()
 
 
 if __name__ == "__main__":
