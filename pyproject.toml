@@ -14,5 +14,8 @@ dependencies = [
 [project.scripts]
 mac-pptx = "mac_pptx_converter.cli:main"
 
+[project.gui-scripts]
+mac-pptx-gui = "mac_pptx_converter.gui:main"
+
 [tool.setuptools.packages.find]
 include = ["mac_pptx_converter*"]
