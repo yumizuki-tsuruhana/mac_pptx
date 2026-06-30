@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mac-pptx-converter"
+version = "1.0.0"
+description = "Convert Windows VBA macro-enabled PowerPoint files to Mac-compatible format"
+requires-python = ">=3.9"
+dependencies = [
+    "olefile>=0.46",
+]
+
+[project.scripts]
+mac-pptx = "mac_pptx_converter.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mac_pptx_converter*"]
