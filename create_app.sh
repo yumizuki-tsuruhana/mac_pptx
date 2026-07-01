@@ -14,7 +14,7 @@ rm -rf "$APP_DIR"
 
 # Create .app directory structure
 mkdir -p "${APP_DIR}/Contents/MacOS"
-mkdir -p "${APP_DIR}/Contents/Resources/app/mac_pptx_converter"
+mkdir -p "${APP_DIR}/Contents/Resources/app"
 
 # ---- Info.plist ----
 cat > "${APP_DIR}/Contents/Info.plist" << 'PLIST'
@@ -122,13 +122,8 @@ if ! "${VENV}/bin/python3" -c "import tkinter" >>"$LOG" 2>&1; then
     exit 1
 fi
 
-if ! "${VENV}/bin/python3" -c "import olefile" >>"$LOG" 2>&1; then
-    "${VENV}/bin/pip" install -q olefile >>"$LOG" 2>&1
-    if ! "${VENV}/bin/python3" -c "import olefile" >>"$LOG" 2>&1; then
-        show_error "依存パッケージ(olefile)のインストールに失敗しました。ログを開きます。"
-        exit 1
-    fi
-fi
+# olefile is vendored inside mac_pptx_converter/_vendor, so no pip
+# install / network access is required at all.
 
 "${VENV}/bin/python3" "${APP_ROOT}/launcher.py" "$@" >>"$LOG" 2>&1
 EXIT_CODE=$?
@@ -141,16 +136,12 @@ LAUNCHER
 
 chmod +x "${APP_DIR}/Contents/MacOS/MacPPTXConverter"
 
-# ---- Copy Python source into the .app ----
+# ---- Copy Python source into the .app (includes vendored olefile) ----
 cp "${SCRIPT_DIR}/launcher.py" "${APP_DIR}/Contents/Resources/app/"
 
-for f in __init__.py cli.py converter.py gui.py ole_builder.py transforms.py vba_compress.py vba_parser.py; do
-    cp "${SCRIPT_DIR}/mac_pptx_converter/${f}" "${APP_DIR}/Contents/Resources/app/mac_pptx_converter/"
-done
-
-# Copy __main__.py if it exists
-[ -f "${SCRIPT_DIR}/mac_pptx_converter/__main__.py" ] && \
-    cp "${SCRIPT_DIR}/mac_pptx_converter/__main__.py" "${APP_DIR}/Contents/Resources/app/mac_pptx_converter/"
+rm -rf "${APP_DIR}/Contents/Resources/app/mac_pptx_converter"
+cp -R "${SCRIPT_DIR}/mac_pptx_converter" "${APP_DIR}/Contents/Resources/app/mac_pptx_converter"
+find "${APP_DIR}/Contents/Resources/app/mac_pptx_converter" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # ---- Remove quarantine attribute ----
 xattr -cr "$APP_DIR" 2>/dev/null || true

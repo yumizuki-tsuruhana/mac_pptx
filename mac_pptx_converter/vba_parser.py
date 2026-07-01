@@ -7,7 +7,14 @@ and writing modified source code back into the OLE container.
 
 import struct
 import io
-import olefile
+import os
+import sys
+
+try:
+    import olefile
+except ImportError:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "_vendor"))
+    import olefile
 
 from .vba_compress import decompress_stream, compress_stream
 from .ole_builder import OLEBuilder
