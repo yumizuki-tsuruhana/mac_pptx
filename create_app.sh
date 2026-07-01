@@ -91,7 +91,7 @@ CANDIDATES=(
 PYTHON=""
 for c in "${CANDIDATES[@]}"; do
     if command -v "$c" &>/dev/null; then
-        if "$c" -c "import tkinter" &>>"$LOG"; then
+        if "$c" -c "import tkinter" >>"$LOG" 2>&1; then
             PYTHON="$c"
             echo "Using python: $c" >> "$LOG"
             break
@@ -117,14 +117,14 @@ if [ ! -x "${VENV}/bin/python3" ]; then
     exit 1
 fi
 
-if ! "${VENV}/bin/python3" -c "import tkinter" &>>"$LOG"; then
+if ! "${VENV}/bin/python3" -c "import tkinter" >>"$LOG" 2>&1; then
     show_error "venv内でtkinterが使えません。ログを開きます。"
     exit 1
 fi
 
-if ! "${VENV}/bin/python3" -c "import olefile" &>>"$LOG"; then
+if ! "${VENV}/bin/python3" -c "import olefile" >>"$LOG" 2>&1; then
     "${VENV}/bin/pip" install -q olefile >>"$LOG" 2>&1
-    if ! "${VENV}/bin/python3" -c "import olefile" &>>"$LOG"; then
+    if ! "${VENV}/bin/python3" -c "import olefile" >>"$LOG" 2>&1; then
         show_error "依存パッケージ(olefile)のインストールに失敗しました。ログを開きます。"
         exit 1
     fi
