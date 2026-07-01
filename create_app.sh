@@ -67,50 +67,76 @@ PLIST
 cat > "${APP_DIR}/Contents/MacOS/MacPPTXConverter" << 'LAUNCHER'
 #!/bin/bash
 
-# Find the Resources directory
-RESOURCES="$(dirname "$0")/../Resources"
+RESOURCES="$(cd "$(dirname "$0")/../Resources" && pwd)"
 APP_ROOT="${RESOURCES}/app"
 VENV="${APP_ROOT}/.venv"
 LOG="${APP_ROOT}/launch.log"
 
-# Find Python 3
-find_python() {
-    # Homebrew (Apple Silicon)
-    if [ -x "/opt/homebrew/bin/python3" ]; then
-        echo "/opt/homebrew/bin/python3"; return
-    fi
-    # Homebrew (Intel)
-    if [ -x "/usr/local/bin/python3" ]; then
-        echo "/usr/local/bin/python3"; return
-    fi
-    # Xcode Command Line Tools / system
-    if command -v python3 &>/dev/null; then
-        echo "python3"; return
-    fi
-    return 1
+echo "=== $(date) ===" > "$LOG"
+
+show_error() {
+    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Mac PPTX Converter\" with icon stop"
+    open -e "$LOG" 2>/dev/null || true
 }
 
-PYTHON=$(find_python) || {
-    osascript -e 'display dialog "Python 3 が見つかりません。\n\nHomebrew でインストールしてください:\n  brew install python3\n\nまたは python.org からダウンロード:\n  https://www.python.org/downloads/" buttons {"OK"} default button "OK" with title "Mac PPTX Converter" with icon stop'
+# Find a python3 that actually has tkinter (Homebrew python3 often lacks it
+# unless python-tk is installed separately, and fails import silently).
+CANDIDATES=(
+    "/opt/homebrew/bin/python3"
+    "/usr/local/bin/python3"
+    "/usr/bin/python3"
+    "python3"
+)
+
+PYTHON=""
+for c in "${CANDIDATES[@]}"; do
+    if command -v "$c" &>/dev/null; then
+        if "$c" -c "import tkinter" &>>"$LOG"; then
+            PYTHON="$c"
+            echo "Using python: $c" >> "$LOG"
+            break
+        else
+            echo "Skipping $c (no tkinter)" >> "$LOG"
+        fi
+    fi
+done
+
+if [ -z "$PYTHON" ]; then
+    show_error "Python3 + tkinter が見つかりません。\n\nターミナルで以下を実行してください:\n\n  brew install python-tk\n\nHomebrew が無い場合は python.org のインストーラーを使ってください:\n  https://www.python.org/downloads/"
     exit 1
-}
-
-# Create venv on first run
-if [ ! -d "$VENV" ]; then
-    osascript -e 'display notification "初回セットアップ中... 数秒お待ちください" with title "Mac PPTX Converter"' &
-    "$PYTHON" -m venv "$VENV" 2>"$LOG" || {
-        osascript -e "display dialog \"venv の作成に失敗しました。\n\nログ: ${LOG}\" buttons {\"OK\"} default button \"OK\" with title \"Mac PPTX Converter\" with icon stop"
-        exit 1
-    }
-    "$VENV/bin/pip" install -q olefile >>"$LOG" 2>&1 || {
-        osascript -e "display dialog \"依存パッケージのインストールに失敗しました。\n\nログ: ${LOG}\" buttons {\"OK\"} default button \"OK\" with title \"Mac PPTX Converter\" with icon stop"
-        rm -rf "$VENV"
-        exit 1
-    }
 fi
 
-# Run the GUI
-exec "$VENV/bin/python3" "${APP_ROOT}/launcher.py" "$@" 2>"$LOG"
+# (Re)create venv if missing or broken
+if [ ! -x "${VENV}/bin/python3" ]; then
+    rm -rf "$VENV"
+    "$PYTHON" -m venv "$VENV" >>"$LOG" 2>&1
+fi
+
+if [ ! -x "${VENV}/bin/python3" ]; then
+    show_error "セットアップ(venv作成)に失敗しました。ログを開きます。"
+    exit 1
+fi
+
+if ! "${VENV}/bin/python3" -c "import tkinter" &>>"$LOG"; then
+    show_error "venv内でtkinterが使えません。ログを開きます。"
+    exit 1
+fi
+
+if ! "${VENV}/bin/python3" -c "import olefile" &>>"$LOG"; then
+    "${VENV}/bin/pip" install -q olefile >>"$LOG" 2>&1
+    if ! "${VENV}/bin/python3" -c "import olefile" &>>"$LOG"; then
+        show_error "依存パッケージ(olefile)のインストールに失敗しました。ログを開きます。"
+        exit 1
+    fi
+fi
+
+"${VENV}/bin/python3" "${APP_ROOT}/launcher.py" "$@" >>"$LOG" 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    show_error "アプリの起動に失敗しました (exit code ${EXIT_CODE})。ログを開きます。"
+    exit 1
+fi
 LAUNCHER
 
 chmod +x "${APP_DIR}/Contents/MacOS/MacPPTXConverter"
