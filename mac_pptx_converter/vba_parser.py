@@ -5,6 +5,8 @@ Handles reading module source code from the dir stream and module streams,
 and writing modified source code back into the OLE container.
 """
 
+from __future__ import annotations
+
 import struct
 import io
 import os

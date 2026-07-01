@@ -3,6 +3,8 @@ Main converter: takes a .pptm/.pptx file, extracts VBA, transforms it
 for Mac compatibility, and writes the converted file.
 """
 
+from __future__ import annotations
+
 import zipfile
 import io
 import os

@@ -5,6 +5,8 @@ Provides a drag-and-drop style window for converting
 Windows VBA macro-enabled Office files for Mac compatibility.
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import threading

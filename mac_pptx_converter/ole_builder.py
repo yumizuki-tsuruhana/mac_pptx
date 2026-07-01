@@ -6,6 +6,8 @@ so we need our own builder to create/modify VBA projects where
 stream sizes change after transformation.
 """
 
+from __future__ import annotations
+
 import struct
 import io
 from dataclasses import dataclass, field

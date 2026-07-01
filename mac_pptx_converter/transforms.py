@@ -5,6 +5,8 @@ Each transform function takes VBA source code and returns (modified_source, list
 Changes are reported as TransformResult objects for the conversion report.
 """
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 
